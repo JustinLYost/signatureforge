@@ -23,36 +23,24 @@ export async function POST(request) {
       }
     )
 
-    if (!res.ok) {
-      throw new Error(`RapidAPI error: ${res.status}`)
-    }
-
     const data = await res.json()
+
+    // Log the full response so we can see the field names
+    console.log('RapidAPI full response:', JSON.stringify(data, null, 2))
 
     if (!data || data.error) {
       return NextResponse.json(
-        { error: 'Could not fetch profile. Make sure the URL is public.' },
+        { error: 'Could not fetch profile.' },
         { status: 404 }
       )
     }
 
-    const result = {
-      firstName: data.first_name || data.firstName || '',
-      lastName: data.last_name || data.lastName || '',
-      jobTitle: data.headline || data.title || '',
-      company: data.company || data.current_company?.name || '',
-      photoUrl: data.profile_image_url || data.photo || data.avatar || '',
-      social: {
-        linkedin: linkedinUrl,
-      }
-    }
-
-    return NextResponse.json({ success: true, profile: result })
+    return NextResponse.json({ success: true, profile: {}, raw: data })
 
   } catch (error) {
     console.error('LinkedIn import error:', error)
     return NextResponse.json(
-      { error: 'Import failed. Please fill in your details manually.' },
+      { error: 'Import failed.' },
       { status: 500 }
     )
   }
