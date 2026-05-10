@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server'
 
-export async function GET(request, { params }) {
+export async function GET(request, context) {
   try {
-    const { sessionId } = params
+    const { sessionId } = await context.params
+
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'Session ID missing' },
+        { status: 400 }
+      )
+    }
 
     const Stripe = (await import('stripe')).default
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
@@ -16,7 +23,6 @@ export async function GET(request, { params }) {
       )
     }
 
-    // Reconstruct sig directly from Stripe metadata chunks
     const metadata = session.metadata
     const totalChunks = parseInt(metadata?.sig_total || '0')
 
@@ -33,8 +39,6 @@ export async function GET(request, { params }) {
     }
 
     const sig = JSON.parse(sigJson)
-
-    // Generate a simple edit token based on session ID
     const editToken = Buffer.from(sessionId).toString('base64url')
 
     return NextResponse.json({ sig, editToken })
