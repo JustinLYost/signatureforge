@@ -1,5 +1,48 @@
 import { NextResponse } from 'next/server'
 
+// Extract hex colors from CSS text
+function extractColorsFromCSS(cssText) {
+  const hexPattern = /#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})\b/g
+  const rgbPattern = /rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/g
+  
+  const colors = new Map()
+
+  // Extract hex colors
+  let match
+  while ((match = hexPattern.exec(cssText)) !== null) {
+    const hex = match[0].toLowerCase()
+    // Skip near-white and near-black and grays
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    const isGray = Math.abs(r - g) < 20 && Math.abs(g - b) < 20 && Math.abs(r - b) < 20
+    const isWhite = r > 240 && g > 240 && b > 240
+    const isBlack = r < 15 && g < 15 && b < 15
+    if (!isGray && !isWhite && !isBlack) {
+      colors.set(hex, (colors.get(hex) || 0) + 1)
+    }
+  }
+
+  // Extract rgb colors and convert to hex
+  while ((match = rgbPattern.exec(cssText)) !== null) {
+    const r = parseInt(match[1])
+    const g = parseInt(match[2])
+    const b = parseInt(match[3])
+    const isGray = Math.abs(r - g) < 20 && Math.abs(g - b) < 20 && Math.abs(r - b) < 20
+    const isWhite = r > 240 && g > 240 && b > 240
+    const isBlack = r < 15 && g < 15 && b < 15
+    if (!isGray && !isWhite && !isBlack) {
+      const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')
+      colors.set(hex, (colors.get(hex) || 0) + 1)
+    }
+  }
+
+  // Sort by frequency
+  return Array.from(colors.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([hex]) => hex)
+}
+
 export async function POST(request) {
   try {
     const { websiteUrl } = await request.json()
@@ -8,55 +51,81 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Website URL required' }, { status: 400 })
     }
 
-    // Take a screenshot using Browserless.io REST API
-    const screenshotRes = await fetch(
-      `https://chrome.browserless.io/screenshot?token=${process.env.BROWSERLESS_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: websiteUrl,
-          options: { fullPage: false, type: 'jpeg', quality: 80 },
-          viewport: { width: 1280, height: 800 },
-        }),
-      }
-    )
-
-    if (!screenshotRes.ok) {
-      throw new Error('Screenshot failed')
-    }
-
-    const imageBuffer = Buffer.from(await screenshotRes.arrayBuffer())
-
-    // Dynamically import node-vibrant (v4 requires this)
-    const { Vibrant } = await import('node-vibrant/node')
-    const palette = await Vibrant.from(imageBuffer).getPalette()
-
-    const colors = []
-    const swatches = ['Vibrant', 'DarkVibrant', 'Muted', 'DarkMuted', 'LightVibrant']
-
-    swatches.forEach(name => {
-      if (palette[name]) {
-        const hex = palette[name].hex
-        if (hex !== '#ffffff' && hex !== '#000000') {
-          colors.push({ name, hex, population: palette[name].population })
-        }
-      }
+    // Fetch the HTML of the website
+    const htmlRes = await fetch(websiteUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+      signal: AbortSignal.timeout(8000),
     })
 
-    colors.sort((a, b) => b.population - a.population)
+    if (!htmlRes.ok) {
+      throw new Error('Could not fetch website')
+    }
 
-    if (colors.length === 0) {
+    const html = await htmlRes.text()
+    let allColors = []
+
+    // Extract inline styles and style tags from HTML
+    const styleTagPattern = /<style[^>]*>([\s\S]*?)<\/style>/gi
+    let styleMatch
+    while ((styleMatch = styleTagPattern.exec(html)) !== null) {
+      const colors = extractColorsFromCSS(styleMatch[1])
+      allColors.push(...colors)
+    }
+
+    // Also extract colors directly from HTML (inline styles)
+    const inlineColors = extractColorsFromCSS(html)
+    allColors.push(...inlineColors)
+
+    // Find CSS file links and fetch the main one
+    const cssLinkPattern = /href=["']([^"']*\.css[^"']*)['"]/gi
+    const cssLinks = []
+    let linkMatch
+    while ((linkMatch = cssLinkPattern.exec(html)) !== null) {
+      cssLinks.push(linkMatch[1])
+    }
+
+    // Fetch up to 2 CSS files
+    const baseUrl = new URL(websiteUrl)
+    for (const link of cssLinks.slice(0, 2)) {
+      try {
+        const cssUrl = link.startsWith('http') ? link : `${baseUrl.origin}${link.startsWith('/') ? '' : '/'}${link}`
+        const cssRes = await fetch(cssUrl, {
+          signal: AbortSignal.timeout(5000),
+        })
+        if (cssRes.ok) {
+          const cssText = await cssRes.text()
+          const colors = extractColorsFromCSS(cssText)
+          allColors.push(...colors)
+        }
+      } catch {
+        // Skip failed CSS files
+      }
+    }
+
+    // Deduplicate and get top colors
+    const colorCounts = new Map()
+    allColors.forEach(color => {
+      colorCounts.set(color, (colorCounts.get(color) || 0) + 1)
+    })
+
+    const topColors = Array.from(colorCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([hex]) => hex)
+      .slice(0, 5)
+
+    if (topColors.length === 0) {
       return NextResponse.json({
-        error: 'Could not extract colors from this site. Try entering colors manually.'
+        error: 'Could not extract colors from this site. Enter them manually.'
       }, { status: 404 })
     }
 
     return NextResponse.json({
       success: true,
-      primary: colors[0]?.hex || '#2563EB',
-      secondary: colors[1]?.hex || '#1A2E4A',
-      palette: colors.slice(0, 5).map(c => c.hex),
+      primary: topColors[0],
+      secondary: topColors[1] || '#1A2E4A',
+      palette: topColors,
     })
 
   } catch (error) {
