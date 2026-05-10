@@ -16,7 +16,11 @@ export default function SuccessContent() {
     const load = async () => {
       try {
         // Fetch session data from our API
-        const res = await fetch(`/api/session/${sessionId}`)
+       const res = await fetch('/api/session/lookup', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ sessionId }),
+})
         const data = await res.json()
  
         if (!data.sig) throw new Error('No signature data')

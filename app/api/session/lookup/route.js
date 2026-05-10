@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 
-export async function GET(request, context) {
+export async function POST(request) {
   try {
-    const { sessionId } = await context.params
+    const { sessionId } = await request.json()
 
     if (!sessionId) {
       return NextResponse.json(
