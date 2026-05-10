@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { saveSignature } from '@/lib/editTokens'
- 
+
+export const dynamic = 'force-dynamic' 
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
  
 // CRITICAL: disable body parsing for webhooks
 
-export const config = { api: { bodyParser: false } }
+
  
 export async function POST(request) {
   const body = await request.text()
