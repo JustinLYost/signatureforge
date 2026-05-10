@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 
 const PRICES = {
-  individual: 'price_xxxxxxxxxxxx',
-  team3:      'price_xxxxxxxxxxxx',
-  business10: 'price_xxxxxxxxxxxx',
+  individual: 'price_1TVLz7IGRzB3Vb3xCH4DKuXo',
+  team3:      'price_1TVM0YIGRzB3Vb3xYY12PR4T',
+  business10: 'price_1TVM1kIGRzB3Vb3xbtTFs7hf',
 }
 
 export async function POST(request) {
