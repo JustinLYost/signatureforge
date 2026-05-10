@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server'
-import Stripe from 'stripe'
 import { getSignatureBySession } from '@/lib/editTokens'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
 export async function GET(request, { params }) {
   try {
     const { sessionId } = params
 
-    // Verify the session exists and was paid
+    const Stripe = (await import('stripe')).default
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+
     const session = await stripe.checkout.sessions.retrieve(sessionId)
 
     if (!session || session.payment_status !== 'paid') {
@@ -18,7 +17,6 @@ export async function GET(request, { params }) {
       )
     }
 
-    // Look up the stored signature and edit token
     const result = await getSignatureBySession(sessionId)
 
     if (!result) {
