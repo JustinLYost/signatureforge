@@ -12,7 +12,6 @@
     "@anthropic-ai/sdk": "^0.95.1",
     "@stripe/stripe-js": "^9.4.0",
     "@tailwindcss/typography": "^0.5.19",
-    "apify-client": "^2.23.2",
     "clsx": "^2.1.1",
     "colorthief": "^3.3.1",
     "html-to-image": "^1.11.13",

@@ -11,32 +11,37 @@ export async function POST(request) {
       )
     }
 
-    // Initialize Apify client at request time, not module level
-    const { ApifyClient } = await import('apify-client')
-    const client = new ApifyClient({ token: process.env.APIFY_API_TOKEN })
+    const res = await fetch(
+      `https://fresh-linkedin-profile-data-api.p.rapidapi.com/api/profile?username=${encodeURIComponent(linkedinUrl)}`,
+      {
+        method: 'GET',
+        headers: {
+          'x-rapidapi-key': process.env.RAPIDAPI_KEY,
+          'x-rapidapi-host': 'fresh-linkedin-profile-data-api.p.rapidapi.com',
+          'Content-Type': 'application/json',
+        },
+      }
+    )
 
-    const run = await client.actor('curious_coder/linkedin-profile-scraper').call({
-  profileUrls: [linkedinUrl],
-  proxyConfiguration: { useApifyProxy: true },
-})
+    if (!res.ok) {
+      throw new Error(`RapidAPI error: ${res.status}`)
+    }
 
-    const { items } = await client.dataset(run.defaultDatasetId).listItems()
+    const data = await res.json()
 
-    if (!items || items.length === 0) {
+    if (!data || data.error) {
       return NextResponse.json(
         { error: 'Could not fetch profile. Make sure the URL is public.' },
         { status: 404 }
       )
     }
 
-    const profile = items[0]
-
     const result = {
-      firstName: profile.firstName || '',
-      lastName: profile.lastName || '',
-      jobTitle: profile.headline || '',
-      company: profile.positions?.[0]?.companyName || '',
-      photoUrl: profile.profilePicture || '',
+      firstName: data.first_name || data.firstName || '',
+      lastName: data.last_name || data.lastName || '',
+      jobTitle: data.headline || data.title || '',
+      company: data.company || data.current_company?.name || '',
+      photoUrl: data.profile_image_url || data.photo || data.avatar || '',
       social: {
         linkedin: linkedinUrl,
       }
