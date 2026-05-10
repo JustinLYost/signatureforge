@@ -14,9 +14,9 @@ export default function SuccessContent() {
     if (!sessionId) { setState('error'); return }
  
     const load = async () => {
-      try {
-        // Fetch session data from our API
-       const res = await fetch('/api/session/lookup', {
+  try {
+    console.log('Session ID from URL:', sessionId)
+    const res = await fetch('/api/session/lookup', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ sessionId }),
