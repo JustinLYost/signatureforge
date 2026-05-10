@@ -6,8 +6,7 @@ import TemplateSelector from './TemplateSelector'
 import ImageUpload from './ImageUpload'
 import SocialLinks from './SocialLinks'
 import CTASection from './CTASection'
- 
-// Reusable collapsible section wrapper
+
 function Section({ title, defaultOpen = false, children }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
@@ -21,15 +20,13 @@ function Section({ title, defaultOpen = false, children }) {
         <span>{title}</span>
         <span className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}>
           ▾
-
         </span>
       </button>
       {open && <div className='px-5 pb-4 space-y-3'>{children}</div>}
     </div>
   )
 }
- 
-// Reusable text input
+
 function Field({ label, value, onChange, placeholder, type = 'text', optional = false }) {
   return (
     <div>
@@ -49,16 +46,26 @@ function Field({ label, value, onChange, placeholder, type = 'text', optional = 
     </div>
   )
 }
- 
+
+const TIER_OPTIONS = [
+  { id: 'individual', label: '1 Signature', price: '$14' },
+  { id: 'team3',      label: '3-Pack',      price: '$39' },
+  { id: 'business10', label: '10-Pack',     price: '$69' },
+]
+
 export default function SignatureForm({
-  sig, onUpdate, onUpdateNested, onCheckout, checkoutLoading
+  sig, onUpdate, onUpdateNested, onCheckout, onSave,
+  checkoutLoading, saveLoading, isEditMode,
+  tier = 'individual', onTierChange
 }) {
   const set = (key) => (val) => onUpdate({ [key]: val })
   const setSocial = (key) => (val) => onUpdateNested('social', { [key]: val })
- 
+
+  const tierPrice = TIER_OPTIONS.find(t => t.id === tier)?.price || '$14'
+
   return (
     <div className='flex flex-col h-full form-panel'>
- 
+
       {/* Header */}
       <div className='px-5 py-4 border-b border-gray-100'>
         <h1 className='text-base font-bold text-gray-900'>Build Your Signature</h1>
@@ -66,11 +73,11 @@ export default function SignatureForm({
           Fill in your details — preview updates live
         </p>
       </div>
- 
+
       {/* Scrollable form body */}
       <div className='flex-1 overflow-y-auto'>
- 
-        {/* LinkedIn Import — always visible at top */}
+
+        {/* LinkedIn Import */}
         <div className='px-5 py-4 border-b border-gray-100 bg-blue-50'>
           <LinkedInImport sig={sig} onUpdate={onUpdate} />
         </div>
@@ -82,7 +89,7 @@ export default function SignatureForm({
             onSelect={val => onUpdate({ template: val })}
           />
         </Section>
- 
+
         {/* Personal Info */}
         <Section title='Personal Info' defaultOpen={true}>
           <div className='grid grid-cols-2 gap-3'>
@@ -96,7 +103,7 @@ export default function SignatureForm({
           <Field label='Company' value={sig.company}
             onChange={set('company')} placeholder='Acme Corp' optional />
         </Section>
- 
+
         {/* Contact */}
         <Section title='Contact Details' defaultOpen={true}>
           <Field label='Email' value={sig.email} type='email'
@@ -110,7 +117,7 @@ export default function SignatureForm({
           <Field label='Address' value={sig.address}
             onChange={set('address')} placeholder='123 Main St, Chicago IL' optional />
         </Section>
- 
+
         {/* Photos */}
         <Section title='Photo & Logo' defaultOpen={false}>
           <div>
@@ -128,16 +135,15 @@ export default function SignatureForm({
             <ImageUpload
               value={sig.logoUrl}
               onChange={val => onUpdate({ logoUrl: val })}
-
             />
           </div>
         </Section>
- 
+
         {/* Social Links */}
         <Section title='Social Links' defaultOpen={false}>
           <SocialLinks social={sig.social} onChange={setSocial} />
         </Section>
- 
+
         {/* Brand Colors */}
         <Section title='Brand Colors' defaultOpen={false}>
           <ColorExtractor
@@ -146,8 +152,8 @@ export default function SignatureForm({
             onUpdate={onUpdate}
           />
         </Section>
- 
-        {/* Typography */}
+
+        {/* Font */}
         <Section title='Font' defaultOpen={false}>
           <div className='grid grid-cols-2 gap-2'>
             {['Arial', 'Georgia', 'Inter', 'Trebuchet MS'].map(f => (
@@ -165,7 +171,7 @@ export default function SignatureForm({
             ))}
           </div>
         </Section>
- 
+
         {/* CTA */}
         <Section title='Call to Action' defaultOpen={false}>
           <CTASection
@@ -174,7 +180,7 @@ export default function SignatureForm({
             onUpdate={onUpdate}
           />
         </Section>
- 
+
         {/* Disclaimer */}
         <Section title='Disclaimer' defaultOpen={false}>
           <div>
@@ -183,7 +189,6 @@ export default function SignatureForm({
               <span className='text-gray-400 font-normal ml-1'>(optional)</span>
             </label>
             <textarea
-
               value={sig.disclaimer}
               onChange={e => onUpdate({ disclaimer: e.target.value })}
               placeholder='This email and any attachments are confidential...'
@@ -194,26 +199,65 @@ export default function SignatureForm({
             />
           </div>
         </Section>
- 
-      </div>{/* end scrollable body */}
- 
+
+      </div>
+
       {/* Sticky checkout footer */}
       <div className='flex-shrink-0 p-4 border-t border-gray-200 bg-white'>
-        <button
-          onClick={onCheckout}
-          disabled={!sig.firstName || !sig.lastName || !sig.jobTitle || checkoutLoading}
-          className='w-full py-3 bg-blue-600 hover:bg-blue-700
-                     disabled:opacity-40 disabled:cursor-not-allowed
-                     text-white font-semibold rounded-xl transition-colors text-sm'
-        >
-          {checkoutLoading ? 'Redirecting...' : 'Get My Signature — $14'}
-        </button>
+
+        {/* Tier selector — only show when not in edit mode */}
+        {!isEditMode && (
+          <div className='grid grid-cols-3 gap-1.5 mb-3'>
+            {TIER_OPTIONS.map(t => (
+              <button
+                key={t.id}
+                onClick={() => onTierChange(t.id)}
+                className={`py-2 px-1 rounded-lg border text-center transition-all
+                  ${tier === t.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 bg-white hover:border-gray-300'}`}
+              >
+                <div className={`text-xs font-semibold leading-tight
+                  ${tier === t.id ? 'text-blue-700' : 'text-gray-700'}`}>
+                  {t.label}
+                </div>
+                <div className={`text-sm font-bold
+                  ${tier === t.id ? 'text-blue-600' : 'text-gray-500'}`}>
+                  {t.price}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Checkout or Save button */}
+        {isEditMode ? (
+          <button
+            onClick={onSave}
+            disabled={saveLoading}
+            className='w-full py-3 bg-green-600 hover:bg-green-700
+                       disabled:opacity-40 disabled:cursor-not-allowed
+                       text-white font-semibold rounded-xl transition-colors text-sm'
+          >
+            {saveLoading ? 'Saving...' : 'Save Changes'}
+          </button>
+        ) : (
+          <button
+            onClick={onCheckout}
+            disabled={!sig.firstName || !sig.lastName || !sig.jobTitle || checkoutLoading}
+            className='w-full py-3 bg-blue-600 hover:bg-blue-700
+                       disabled:opacity-40 disabled:cursor-not-allowed
+                       text-white font-semibold rounded-xl transition-colors text-sm'
+          >
+            {checkoutLoading ? 'Redirecting...' : `Get My Signature — ${tierPrice}`}
+          </button>
+        )}
+
         <p className='text-center text-xs text-gray-400 mt-2'>
           One-time payment · No subscription · 30-day edit link included
         </p>
       </div>
- 
+
     </div>
   )
 }
-
