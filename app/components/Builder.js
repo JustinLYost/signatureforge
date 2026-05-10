@@ -36,6 +36,11 @@ const defaultSignature = {
     url: '',
   },
   disclaimer: '',
+  metrics: [
+    { value: '10+', label: 'Years Experience' },
+    { value: '100+', label: 'Clients Served' },
+    { value: '98%', label: 'Satisfaction Rate' },
+  ],
 }
 
 export default function Builder({ initialSig, editToken, onSave }) {
