@@ -13,17 +13,19 @@ export async function POST(request) {
     const Stripe = (await import('stripe')).default
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
-    // Store sig in metadata — Stripe allows up to 500 chars per key
-    // We split across multiple metadata keys if needed
     const sigJson = JSON.stringify(sig)
     const chunkSize = 490
-    const chunks = {}
     const totalChunks = Math.ceil(sigJson.length / chunkSize)
-    
+    const chunks = {}
+
     for (let i = 0; i < totalChunks; i++) {
       chunks[`sig_${i}`] = sigJson.slice(i * chunkSize, (i + 1) * chunkSize)
     }
     chunks['sig_total'] = String(totalChunks)
+
+    console.log('Sig JSON length:', sigJson.length)
+    console.log('Total chunks:', totalChunks)
+    console.log('Chunk keys:', Object.keys(chunks))
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -33,6 +35,9 @@ export async function POST(request) {
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/builder`,
       metadata: chunks,
     })
+
+    console.log('Session created:', session.id)
+    console.log('Session metadata keys:', Object.keys(session.metadata || {}))
 
     return NextResponse.json({ url: session.url })
 
