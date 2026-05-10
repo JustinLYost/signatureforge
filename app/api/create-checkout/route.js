@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
  
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+const getStripe = () => new Stripe(process.env.STRIPE_SECRET_KEY)
  
 // Price IDs — create these in your Stripe dashboard first
 const PRICES = {
-  individual: 'price_xxxxxxxxxxxx',  // $14 one-time
-  team3:      'price_xxxxxxxxxxxx',  // $39 one-time
-  business10: 'price_xxxxxxxxxxxx',  // $69 one-time
+  individual: 'price_1TVLz7IGRzB3Vb3xCH4DKuXo',  // $14 one-time
+  team3:      'price_1TVM0YIGRzB3Vb3xYY12PR4T',  // $39 one-time
+  business10: 'price_1TVM1kIGRzB3Vb3xbtTFs7hf',  // $69 one-time
 }
  
 export async function POST(request) {
@@ -18,7 +18,7 @@ export async function POST(request) {
     // For large signature objects, store in your DB and pass an ID instead
     const sigJson = JSON.stringify(sig)
  
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
       line_items: [{ price: PRICES[tier], quantity: 1 }],
