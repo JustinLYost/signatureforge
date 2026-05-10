@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { getSignatureBySession } from '@/lib/editTokens'
 
 export async function GET(request, { params }) {
   try {
@@ -17,33 +16,28 @@ export async function GET(request, { params }) {
       )
     }
 
-    // Try to get from editTokens store first
-    const result = await getSignatureBySession(sessionId)
-
-    if (result) {
-      return NextResponse.json({
-        sig: result.sig,
-        editToken: result.token,
-      })
-    }
-
-    // Fallback: reconstruct from Stripe metadata
+    // Reconstruct sig directly from Stripe metadata chunks
     const metadata = session.metadata
     const totalChunks = parseInt(metadata?.sig_total || '0')
-    
-    if (totalChunks > 0) {
-      let sigJson = ''
-      for (let i = 0; i < totalChunks; i++) {
-        sigJson += metadata[`sig_${i}`] || ''
-      }
-      const sig = JSON.parse(sigJson)
-      return NextResponse.json({ sig, editToken: null })
+
+    if (totalChunks === 0) {
+      return NextResponse.json(
+        { error: 'Signature data not found' },
+        { status: 404 }
+      )
     }
 
-    return NextResponse.json(
-      { error: 'Signature data not found' },
-      { status: 404 }
-    )
+    let sigJson = ''
+    for (let i = 0; i < totalChunks; i++) {
+      sigJson += metadata[`sig_${i}`] || ''
+    }
+
+    const sig = JSON.parse(sigJson)
+
+    // Generate a simple edit token based on session ID
+    const editToken = Buffer.from(sessionId).toString('base64url')
+
+    return NextResponse.json({ sig, editToken })
 
   } catch (error) {
     console.error('Session lookup error:', error)
