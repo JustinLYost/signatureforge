@@ -24,28 +24,24 @@ export async function POST(request) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
+    const metadata = session.metadata
 
-    let sig
-    if (session.metadata.sigData && session.metadata.sigData !== 'LARGE') {
-      sig = JSON.parse(session.metadata.sigData)
-    } else {
-      sig = await loadTempSig(session.id)
-    }
+    try {
+      // Reconstruct sig from chunks
+      const totalChunks = parseInt(metadata.sig_total || '0')
+      let sigJson = ''
+      for (let i = 0; i < totalChunks; i++) {
+        sigJson += metadata[`sig_${i}`] || ''
+      }
 
-    if (sig) {
-      await saveSignature(session.id, sig)
+      if (sigJson) {
+        const sig = JSON.parse(sigJson)
+        await saveSignature(session.id, sig)
+      }
+    } catch (err) {
+      console.error('Failed to parse sig from metadata:', err)
     }
   }
 
   return NextResponse.json({ received: true })
-}
-
-async function loadTempSig(sessionId) {
-  const fs = await import('fs/promises')
-  const path = await import('path')
-  const file = path.join(process.cwd(), 'tmp', 'sigs.json')
-  try {
-    const store = JSON.parse(await fs.readFile(file, 'utf8'))
-    return store[sessionId] || null
-  } catch { return null }
 }

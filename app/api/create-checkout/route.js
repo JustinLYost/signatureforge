@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 
 const PRICES = {
-  individual: 'price_1TVLz7IGRzB3Vb3xCH4DKuXo',
-  team3:      'price_1TVM0YIGRzB3Vb3xYY12PR4T',
-  business10: 'price_1TVM1kIGRzB3Vb3xbtTFs7hf',
+  individual: 'price_xxxxxxxxxxxx',
+  team3:      'price_xxxxxxxxxxxx',
+  business10: 'price_xxxxxxxxxxxx',
 }
 
 export async function POST(request) {
@@ -13,7 +13,17 @@ export async function POST(request) {
     const Stripe = (await import('stripe')).default
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
+    // Store sig in metadata — Stripe allows up to 500 chars per key
+    // We split across multiple metadata keys if needed
     const sigJson = JSON.stringify(sig)
+    const chunkSize = 490
+    const chunks = {}
+    const totalChunks = Math.ceil(sigJson.length / chunkSize)
+    
+    for (let i = 0; i < totalChunks; i++) {
+      chunks[`sig_${i}`] = sigJson.slice(i * chunkSize, (i + 1) * chunkSize)
+    }
+    chunks['sig_total'] = String(totalChunks)
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -21,15 +31,8 @@ export async function POST(request) {
       line_items: [{ price: PRICES[tier], quantity: 1 }],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/builder`,
-      metadata: {
-        sigData: sigJson.length < 450 ? sigJson : 'LARGE',
-        tier,
-      },
+      metadata: chunks,
     })
-
-    if (sigJson.length >= 450) {
-      await saveTempSig(session.id, sig)
-    }
 
     return NextResponse.json({ url: session.url })
 
@@ -37,15 +40,4 @@ export async function POST(request) {
     console.error('Checkout error:', error)
     return NextResponse.json({ error: 'Checkout failed' }, { status: 500 })
   }
-}
-
-async function saveTempSig(sessionId, sig) {
-  const fs = await import('fs/promises')
-  const path = await import('path')
-  const file = path.join(process.cwd(), 'tmp', 'sigs.json')
-  let store = {}
-  try { store = JSON.parse(await fs.readFile(file, 'utf8')) } catch {}
-  store[sessionId] = sig
-  await fs.mkdir(path.dirname(file), { recursive: true })
-  await fs.writeFile(file, JSON.stringify(store))
 }

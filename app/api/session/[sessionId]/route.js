@@ -17,19 +17,33 @@ export async function GET(request, { params }) {
       )
     }
 
+    // Try to get from editTokens store first
     const result = await getSignatureBySession(sessionId)
 
-    if (!result) {
-      return NextResponse.json(
-        { error: 'Signature data not found' },
-        { status: 404 }
-      )
+    if (result) {
+      return NextResponse.json({
+        sig: result.sig,
+        editToken: result.token,
+      })
     }
 
-    return NextResponse.json({
-      sig: result.sig,
-      editToken: result.token,
-    })
+    // Fallback: reconstruct from Stripe metadata
+    const metadata = session.metadata
+    const totalChunks = parseInt(metadata?.sig_total || '0')
+    
+    if (totalChunks > 0) {
+      let sigJson = ''
+      for (let i = 0; i < totalChunks; i++) {
+        sigJson += metadata[`sig_${i}`] || ''
+      }
+      const sig = JSON.parse(sigJson)
+      return NextResponse.json({ sig, editToken: null })
+    }
+
+    return NextResponse.json(
+      { error: 'Signature data not found' },
+      { status: 404 }
+    )
 
   } catch (error) {
     console.error('Session lookup error:', error)
