@@ -15,9 +15,10 @@ export async function POST(request) {
     const { ApifyClient } = await import('apify-client')
     const client = new ApifyClient({ token: process.env.APIFY_API_TOKEN })
 
-    const run = await client.actor('apify/linkedin-profile-scraper').call({
-      profileUrls: [linkedinUrl],
-    })
+    const run = await client.actor('curious_coder/linkedin-profile-scraper').call({
+  profileUrls: [linkedinUrl],
+  proxyConfiguration: { useApifyProxy: true },
+})
 
     const { items } = await client.dataset(run.defaultDatasetId).listItems()
 
