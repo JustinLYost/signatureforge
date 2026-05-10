@@ -43,6 +43,7 @@ export default function Builder({ initialSig, editToken, onSave }) {
   const [previewMode, setPreviewMode] = useState('desktop')
   const [loading, setLoading] = useState(false)
   const [saveLoading, setSaveLoading] = useState(false)
+  const [tier, setTier] = useState('individual')
 
   const updateSig = useCallback((updates) => {
     setSig(prev => ({ ...prev, ...updates }))
@@ -58,7 +59,7 @@ export default function Builder({ initialSig, editToken, onSave }) {
       const res = await fetch('/api/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sig }),
+        body: JSON.stringify({ sig, tier }),
       })
       const { url } = await res.json()
       window.location.href = url
@@ -94,6 +95,8 @@ export default function Builder({ initialSig, editToken, onSave }) {
           checkoutLoading={loading}
           saveLoading={saveLoading}
           isEditMode={!!editToken}
+          tier={tier}
+          onTierChange={setTier}
         />
       </div>
 
