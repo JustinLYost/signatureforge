@@ -69,7 +69,7 @@ export default function LinkedInImport({ onUpdate }) {
           type='url'
           value={url}
           onChange={e => setUrl(e.target.value)}
-          placeholder='https://linkedin.com/in/yourname'
+          placeholder='https://linkedin.com/in/yourname or just your username'
           disabled={status === 'loading'}
           className='flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg
                      focus:outline-none focus:ring-2 focus:ring-blue-500
