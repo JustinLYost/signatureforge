@@ -63,6 +63,12 @@ export default function SignatureForm({
 
   const tierPrice = TIER_OPTIONS.find(t => t.id === tier)?.price || '$14'
 
+  const updateMetric = (index, field, value) => {
+    const updated = [...(sig.metrics || [])]
+    updated[index] = { ...updated[index], [field]: value }
+    onUpdate({ metrics: updated })
+  }
+
   return (
     <div className='flex flex-col h-full form-panel'>
 
@@ -172,6 +178,47 @@ export default function SignatureForm({
           </div>
         </Section>
 
+        {/* Metrics — only show when Consultant template is selected */}
+        {sig.template === 'consultant' && (
+          <Section title='Consultant Metrics' defaultOpen={true}>
+            <p className='text-xs text-gray-400 mb-2'>
+              These three stats appear below your name in the Consultant template.
+            </p>
+            {(sig.metrics || []).map((metric, i) => (
+              <div key={i} className='grid grid-cols-2 gap-2'>
+                <div>
+                  <label className='block text-xs font-medium text-gray-600 mb-1'>
+                    Value {i + 1}
+                  </label>
+                  <input
+                    type='text'
+                    value={metric.value}
+                    onChange={e => updateMetric(i, 'value', e.target.value)}
+                    placeholder='e.g. 10+'
+                    className='w-full px-3 py-2 text-sm border border-gray-200 rounded-lg
+                               focus:outline-none focus:ring-2 focus:ring-blue-500
+                               placeholder:text-gray-300'
+                  />
+                </div>
+                <div>
+                  <label className='block text-xs font-medium text-gray-600 mb-1'>
+                    Label {i + 1}
+                  </label>
+                  <input
+                    type='text'
+                    value={metric.label}
+                    onChange={e => updateMetric(i, 'label', e.target.value)}
+                    placeholder='e.g. Years Experience'
+                    className='w-full px-3 py-2 text-sm border border-gray-200 rounded-lg
+                               focus:outline-none focus:ring-2 focus:ring-blue-500
+                               placeholder:text-gray-300'
+                  />
+                </div>
+              </div>
+            ))}
+          </Section>
+        )}
+
         {/* CTA */}
         <Section title='Call to Action' defaultOpen={false}>
           <CTASection
@@ -205,7 +252,6 @@ export default function SignatureForm({
       {/* Sticky checkout footer */}
       <div className='flex-shrink-0 p-4 border-t border-gray-200 bg-white'>
 
-        {/* Tier selector — only show when not in edit mode */}
         {!isEditMode && (
           <div className='grid grid-cols-3 gap-1.5 mb-3'>
             {TIER_OPTIONS.map(t => (
@@ -230,7 +276,6 @@ export default function SignatureForm({
           </div>
         )}
 
-        {/* Checkout or Save button */}
         {isEditMode ? (
           <button
             onClick={onSave}
