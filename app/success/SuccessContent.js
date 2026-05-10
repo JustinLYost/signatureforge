@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import OutputPanel from '@/components/OutputPanel'
+import OutputPanel from '../components/OutputPanel'
  
 export default function SuccessContent() {
   const searchParams = useSearchParams()
