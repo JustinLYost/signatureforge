@@ -11,8 +11,6 @@ export default function SuccessContent() {
   const [editToken, setEditToken] = useState(null)
 
   useEffect(() => {
-    console.log('Session ID from URL:', sessionId)
-
     if (!sessionId) {
       setState('error')
       return
@@ -20,22 +18,15 @@ export default function SuccessContent() {
 
     const load = async () => {
       try {
-        console.log('Fetching session data...')
-
         const res = await fetch('/api/session/lookup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId }),
         })
 
-        console.log('Response status:', res.status)
         const data = await res.json()
-        console.log('Response data keys:', Object.keys(data))
 
-        if (!data.sig) {
-          console.error('No sig in response:', data)
-          throw new Error('No signature data')
-        }
+        if (!data.sig) throw new Error('No signature data')
 
         const htmlRes = await fetch('/api/generate-html', {
           method: 'POST',
@@ -48,7 +39,7 @@ export default function SuccessContent() {
         setEditToken(data.editToken)
         setState('ready')
       } catch (err) {
-        console.error('Load error:', err)
+        console.error(err)
         setState('error')
       }
     }
@@ -60,9 +51,14 @@ export default function SuccessContent() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: '32px', height: '32px', border: '4px solid #2563EB',
-            borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 16px',
-            animation: 'spin 1s linear infinite' }} />
+          <div style={{
+            width: '32px', height: '32px',
+            border: '4px solid #2563EB',
+            borderTopColor: 'transparent',
+            borderRadius: '50%',
+            margin: '0 auto 16px',
+            animation: 'spin 1s linear infinite',
+          }} />
           <p style={{ color: '#6B7280' }}>Generating your signature...</p>
         </div>
       </div>
@@ -78,7 +74,7 @@ export default function SuccessContent() {
           </h1>
           <p style={{ color: '#6B7280', marginBottom: '24px', lineHeight: 1.6 }}>
             Your payment was processed but we had trouble loading your signature.
-            Email us at hello@signatureforge.com with your order ID and we will
+            Email us at hello@signature-forge.com with your order ID and we will
             get it sorted immediately.
           </p>
           <p style={{ fontSize: '13px', color: '#9CA3AF' }}>Session ID: {sessionId}</p>

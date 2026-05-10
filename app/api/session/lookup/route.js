@@ -3,9 +3,7 @@ import { NextResponse } from 'next/server'
 export async function POST(request) {
   try {
     const body = await request.json()
-    console.log('Lookup body received:', JSON.stringify(body))
     const { sessionId } = body
-    console.log('Session ID:', sessionId)
 
     if (!sessionId) {
       return NextResponse.json(
