@@ -1,3 +1,33 @@
+# SignatureForge
+
+AI-powered email signature generator. Build a professional, Outlook-safe email signature in 60 seconds.
+
+🔗 **Live app:** [signature-forge.com](https://www.signature-forge.com)
+
+## Features
+
+- **LinkedIn Auto-Import** — paste your LinkedIn URL and auto-fill your name, title, company, and photo
+- **Brand Color Extraction** — paste your company site and AI extracts your brand colors automatically
+- **Smart CTA Generator** — AI writes role-tailored call-to-action suggestions
+- **Outlook-Safe HTML** — generates a separate table-based HTML version tested against Outlook 2016/2019/2021/365, in addition to standard Gmail/Apple Mail/Thunderbird HTML
+- 28 templates, PNG export, 30-day edit link after purchase
+
+## Why
+
+Most signature generators either charge a recurring subscription for something you set up once, or output HTML that breaks the moment it hits Outlook's Word-based rendering engine. SignatureForge is a one-time purchase ($14) and ships Outlook-safe output by default.
+
+## Tech Stack
+
+- [Next.js](https://nextjs.org)
+- Deployed on [Vercel](https://vercel.com)
+- AI integration for LinkedIn parsing, color extraction, and CTA generation
+
+## Getting Started
+
+```bash
+npm run dev
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
